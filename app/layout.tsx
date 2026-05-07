@@ -3,8 +3,8 @@ import './globals.css'
 import { ThemeProvider } from '@/lib/theme-context'
 
 export const metadata: Metadata = {
-  title: 'ChatAnon — Free Random Chat',
-  description: 'Chat anonymously with strangers for free. No registration required.',
+  title: 'OmeTalk — Free Random Chat',
+  description: 'Chat anonymously with strangers for free. The free Omegle alternative. No registration required.',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

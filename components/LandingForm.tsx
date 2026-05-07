@@ -53,7 +53,7 @@ export default function LandingForm() {
         {/* Logo */}
         <div style={{ textAlign: 'center' }}>
           <h1 style={{ fontSize: 36, fontWeight: 700, margin: 0, marginBottom: 8, color: theme.textPrimary }}>
-            Chat<span style={{ color: '#7c3aed' }}>Anon</span>
+            Ome<span style={{ color: '#7c3aed' }}>Talk</span>
           </h1>
           <p style={{ color: theme.textSecondary, fontSize: 14, margin: 0 }}>
             Chat with strangers for free.
