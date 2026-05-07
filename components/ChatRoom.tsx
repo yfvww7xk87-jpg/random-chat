@@ -34,7 +34,14 @@ export default function ChatRoom({ sessionId, userA, userB }: Props) {
   const [partnerLeft, setPartnerLeft] = useState(false)
   const [showReport, setShowReport] = useState(false)
   const [partnerTyping, setPartnerTyping] = useState(false)
+  const [partnerCountry, setPartnerCountry] = useState<string | null>(null)
   const partnerTypingTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  function getFlagEmoji(countryCode: string) {
+    return countryCode.toUpperCase().replace(/./g, char =>
+      String.fromCodePoint(127397 + char.charCodeAt(0))
+    )
+  }
 
   const channelRef = useRef<RealtimeChannel | null>(null)
 
@@ -68,9 +75,24 @@ export default function ChatRoom({ sessionId, userA, userB }: Props) {
         const gone = leftPresences.some((p: any) => p.userId === partnerId)
         if (gone) setPartnerLeft(true)
       })
+      .on('presence', { event: 'join' }, ({ newPresences }) => {
+        const partner = newPresences.find((p: any) => p.userId === partnerId)
+        if (partner?.countryCode) setPartnerCountry(partner.countryCode)
+      })
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState()
+        for (const presences of Object.values(state)) {
+          for (const p of presences as any[]) {
+            if (p.userId === partnerId && p.countryCode) {
+              setPartnerCountry(p.countryCode)
+            }
+          }
+        }
+      })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
-          await channel.track({ userId })
+          const geoRes = await fetch('/api/geo').then(r => r.json()).catch(() => ({}))
+          await channel.track({ userId, countryCode: geoRes.countryCode ?? null })
         }
       })
 
@@ -165,7 +187,9 @@ export default function ChatRoom({ sessionId, userA, userB }: Props) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ width: 10, height: 10, borderRadius: '50%', background: partnerLeft ? '#ef4444' : '#22c55e', flexShrink: 0 }} />
             <span style={{ fontSize: 17, fontWeight: 600, color: theme.textPrimary }}>
-              {partnerLeft ? 'Disconnected' : 'Stranger'}
+              {partnerLeft ? 'Disconnected' : (
+                <>Stranger{partnerCountry ? ` ${getFlagEmoji(partnerCountry)}` : ''}</>
+              )}
             </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
