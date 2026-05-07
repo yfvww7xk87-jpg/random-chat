@@ -1,17 +1,22 @@
 'use client'
 
 import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { getOrCreateAnonId, loadChatPrefs } from '@/lib/anon-id'
+import { getOrCreateAnonId } from '@/lib/anon-id'
 import { useTheme } from '@/lib/theme-context'
 import ThemeToggle from './ThemeToggle'
 
 export default function WaitingRoom() {
   const router = useRouter()
   const { theme } = useTheme()
+  const searchParams = useSearchParams()
+  const gender = searchParams.get('gender')
+  const filter = searchParams.get('filter') || null
 
   useEffect(() => {
+    if (!gender) { router.replace('/'); return }
+
     const supabase = createClient()
     const userId = getOrCreateAnonId()
 
@@ -26,12 +31,10 @@ export default function WaitingRoom() {
 
     // Poll every 3 seconds: re-attempt matching in case of race condition or missed broadcast
     const poll = setInterval(async () => {
-      const prefs = loadChatPrefs()
-      if (!prefs) return
       const res = await fetch('/api/queue/join', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, gender: prefs.gender, filter: prefs.filter }),
+        body: JSON.stringify({ userId, gender, filter }),
       })
       const data = await res.json()
       if (data.status === 'matched') {

@@ -165,7 +165,7 @@ export default function ChatRoom({ sessionId, userA, userB }: Props) {
     if (data.status === 'matched') {
       router.push(`/chat?session=${data.sessionId}`)
     } else {
-      router.push('/waiting')
+      router.push(`/waiting?gender=${prefs.gender}&filter=${prefs.filter ?? ''}`)
     }
   }
 

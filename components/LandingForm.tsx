@@ -37,7 +37,7 @@ export default function LandingForm() {
     if (data.status === 'matched') {
       router.push(`/chat?session=${data.sessionId}`)
     } else {
-      router.push('/waiting')
+      router.push(`/waiting?gender=${gender}&filter=${filter ?? ''}`)
     }
   }
 
