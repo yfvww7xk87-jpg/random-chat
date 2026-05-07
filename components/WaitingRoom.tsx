@@ -29,18 +29,14 @@ export default function WaitingRoom() {
       })
       .subscribe()
 
-    // Poll every 3 seconds: re-attempt matching in case of race condition or missed broadcast
+    // Poll every 2 seconds: check if a session was created (fallback for missed broadcasts)
     const poll = setInterval(async () => {
-      const res = await fetch('/api/queue/join', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, gender, filter }),
-      })
+      const res = await fetch(`/api/queue/status?userId=${userId}`)
       const data = await res.json()
       if (data.status === 'matched') {
         router.push(`/chat?session=${data.sessionId}`)
       }
-    }, 3000)
+    }, 2000)
 
     function handleUnload() {
       fetch('/api/queue/leave', {
