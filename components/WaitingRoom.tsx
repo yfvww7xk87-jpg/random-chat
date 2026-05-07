@@ -3,7 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { getOrCreateAnonId } from '@/lib/anon-id'
+import { getOrCreateAnonId, loadChatPrefs } from '@/lib/anon-id'
 import { useTheme } from '@/lib/theme-context'
 import ThemeToggle from './ThemeToggle'
 
@@ -24,9 +24,15 @@ export default function WaitingRoom() {
       })
       .subscribe()
 
-    // Poll every 3 seconds as fallback in case broadcast is missed
+    // Poll every 3 seconds: re-attempt matching in case of race condition or missed broadcast
     const poll = setInterval(async () => {
-      const res = await fetch(`/api/queue/status?userId=${userId}`)
+      const prefs = loadChatPrefs()
+      if (!prefs) return
+      const res = await fetch('/api/queue/join', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, gender: prefs.gender, filter: prefs.filter }),
+      })
       const data = await res.json()
       if (data.status === 'matched') {
         router.push(`/chat?session=${data.sessionId}`)
