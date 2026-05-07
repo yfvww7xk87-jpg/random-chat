@@ -5,6 +5,9 @@ import { ThemeProvider } from '@/lib/theme-context'
 export const metadata: Metadata = {
   title: 'OmeTalk — Free Random Chat',
   description: 'Chat anonymously with strangers for free. The free Omegle alternative. No registration required.',
+  verification: {
+    google: '9gwugAFDrWIHmSSoVeQDRDy2hWNoKee6mUgxHOD8Ws0',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
