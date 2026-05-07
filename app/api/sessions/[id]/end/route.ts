@@ -4,9 +4,9 @@ import { serverBroadcast } from '@/lib/supabase/broadcast'
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id: sessionId } = params
+  const { id: sessionId } = await params
   const body = await req.json().catch(() => null)
   const userId = body?.userId
 
