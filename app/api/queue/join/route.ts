@@ -25,9 +25,11 @@ export async function POST(req: NextRequest) {
   })
 
   if (error) {
-    console.error('Matchmaking error:', error)
+    console.error('Matchmaking RPC error:', JSON.stringify(error))
     return NextResponse.json({ error: 'Server error' }, { status: 500 })
   }
+
+  console.log('Matchmaking result:', JSON.stringify(data))
 
   if (data.status === 'matched') {
     await serverBroadcast(`queue:${data.partner_id}`, 'matched', {
