@@ -4,9 +4,12 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { getOrCreateAnonId } from '@/lib/anon-id'
+import { useTheme } from '@/lib/theme-context'
+import ThemeToggle from './ThemeToggle'
 
 export default function WaitingRoom() {
   const router = useRouter()
+  const { theme } = useTheme()
 
   useEffect(() => {
     const supabase = createClient()
@@ -48,15 +51,18 @@ export default function WaitingRoom() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-dvh gap-6 px-4">
-      <div className="w-16 h-16 rounded-full border-4 border-[#2a2a2a] border-t-[#7c3aed] animate-spin" />
-      <div className="text-center">
-        <h2 className="text-xl font-semibold mb-2">Looking for someone...</h2>
-        <p className="text-gray-400 text-sm">You will be connected automatically</p>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100dvh', gap: 24, padding: 24, background: theme.bg, position: 'relative' }}>
+      <div style={{ position: 'absolute', top: 16, right: 16 }}>
+        <ThemeToggle />
+      </div>
+      <div style={{ width: 56, height: 56, borderRadius: '50%', border: `4px solid ${theme.border}`, borderTopColor: '#7c3aed', animation: 'spin 0.8s linear infinite' }} />
+      <div style={{ textAlign: 'center' }}>
+        <h2 style={{ fontSize: 22, fontWeight: 600, color: theme.textPrimary, margin: 0, marginBottom: 8 }}>Looking for someone...</h2>
+        <p style={{ color: theme.textSecondary, fontSize: 14, margin: 0 }}>You will be connected automatically</p>
       </div>
       <button
         onClick={handleCancel}
-        className="text-gray-500 text-sm hover:text-gray-300 transition-colors mt-4"
+        style={{ color: theme.textSecondary, fontSize: 14, background: 'transparent', border: `1px solid ${theme.border}`, borderRadius: 10, padding: '8px 20px', cursor: 'pointer', marginTop: 8 }}
       >
         Cancel
       </button>

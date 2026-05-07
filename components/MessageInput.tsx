@@ -1,4 +1,5 @@
 import { useState, KeyboardEvent } from 'react'
+import { useTheme } from '@/lib/theme-context'
 
 interface Props {
   onSend: (text: string) => void
@@ -7,6 +8,7 @@ interface Props {
 
 export default function MessageInput({ onSend, disabled }: Props) {
   const [text, setText] = useState('')
+  const { theme } = useTheme()
 
   function handleSend() {
     const trimmed = text.trim()
@@ -22,11 +24,10 @@ export default function MessageInput({ onSend, disabled }: Props) {
     }
   }
 
+  const sendable = !disabled && !!text.trim()
+
   return (
-    <div
-      className="flex gap-2 items-end px-4 py-3 bg-[#0f0f0f] border-t border-[#2a2a2a]"
-      style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}
-    >
+    <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', padding: '12px 16px', paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}>
       <textarea
         value={text}
         onChange={e => setText(e.target.value)}
@@ -34,14 +35,37 @@ export default function MessageInput({ onSend, disabled }: Props) {
         disabled={disabled}
         placeholder={disabled ? 'Partner has left...' : 'Type a message...'}
         rows={1}
-        className="flex-1 bg-[#2a2a2a] text-white rounded-xl px-4 py-2.5 text-sm resize-none outline-none placeholder-gray-500 disabled:opacity-50"
-        style={{ minHeight: 44, maxHeight: 120 }}
+        style={{
+          flex: 1,
+          background: theme.inputBg,
+          color: theme.textPrimary,
+          border: `1px solid ${theme.border}`,
+          borderRadius: 16,
+          padding: '12px 16px',
+          fontSize: 15,
+          resize: 'none',
+          outline: 'none',
+          minHeight: 50,
+          maxHeight: 120,
+          fontFamily: 'system-ui, sans-serif',
+        }}
       />
       <button
         onClick={handleSend}
-        disabled={disabled || !text.trim()}
-        style={{ minHeight: 44, minWidth: 44 }}
-        className="bg-[#7c3aed] text-white rounded-xl px-4 py-2.5 text-sm font-semibold disabled:opacity-40 hover:bg-[#6d28d9] transition-colors"
+        disabled={!sendable}
+        style={{
+          background: sendable ? '#7c3aed' : theme.surface2,
+          color: sendable ? '#fff' : theme.textSecondary,
+          border: 'none',
+          borderRadius: 16,
+          padding: '0 22px',
+          height: 50,
+          fontSize: 15,
+          fontWeight: 700,
+          cursor: sendable ? 'pointer' : 'not-allowed',
+          flexShrink: 0,
+          fontFamily: 'system-ui, sans-serif',
+        }}
       >
         Send
       </button>

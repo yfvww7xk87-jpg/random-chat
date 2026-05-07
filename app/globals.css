@@ -15,8 +15,6 @@
 }
 
 body {
-  background-color: var(--bg);
-  color: var(--text);
   font-family: system-ui, sans-serif;
   min-height: 100dvh;
   margin: 0;

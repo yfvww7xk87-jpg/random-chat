@@ -4,10 +4,12 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import type { RealtimeChannel } from '@supabase/supabase-js'
-import { getOrCreateAnonId } from '@/lib/anon-id'
+import { getOrCreateAnonId, loadChatPrefs } from '@/lib/anon-id'
+import { useTheme } from '@/lib/theme-context'
 import MessageList from './MessageList'
 import MessageInput from './MessageInput'
 import ReportModal from './ReportModal'
+import ThemeToggle from './ThemeToggle'
 
 interface Message {
   id: string
@@ -24,7 +26,8 @@ interface Props {
 
 export default function ChatRoom({ sessionId, userA, userB }: Props) {
   const router = useRouter()
-  const userId = getOrCreateAnonId()
+  const { theme } = useTheme()
+  const [userId, setUserId] = useState('')
   const partnerId = userId === userA ? userB : userA
 
   const [messages, setMessages] = useState<Message[]>([])
@@ -33,12 +36,13 @@ export default function ChatRoom({ sessionId, userA, userB }: Props) {
 
   const channelRef = useRef<RealtimeChannel | null>(null)
 
-  // Guard: redirect if user is not part of this session
   useEffect(() => {
-    if (userId !== userA && userId !== userB) {
+    const id = getOrCreateAnonId()
+    setUserId(id)
+    if (id !== userA && id !== userB) {
       router.replace('/')
     }
-  }, [userId, userA, userB, router])
+  }, [userA, userB, router])
 
   useEffect(() => {
     const supabase = createClient()
@@ -98,13 +102,36 @@ export default function ChatRoom({ sessionId, userA, userB }: Props) {
     })
   }
 
-  async function handleNext() {
+  async function handleStop() {
     await fetch(`/api/sessions/${sessionId}/end`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId }),
     })
     router.push('/')
+  }
+
+  async function handleNext() {
+    await fetch(`/api/sessions/${sessionId}/end`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId }),
+    })
+
+    const prefs = loadChatPrefs()
+    if (!prefs) { router.push('/'); return }
+
+    const res = await fetch('/api/queue/join', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, gender: prefs.gender, filter: prefs.filter }),
+    })
+    const data = await res.json()
+    if (data.status === 'matched') {
+      router.push(`/chat?session=${data.sessionId}`)
+    } else {
+      router.push('/waiting')
+    }
   }
 
   async function handleReport(reason: string) {
@@ -117,45 +144,64 @@ export default function ChatRoom({ sessionId, userA, userB }: Props) {
   }
 
   return (
-    <div className="flex flex-col h-dvh">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[#2a2a2a]">
-        <span className="text-sm text-gray-400">
-          {partnerLeft ? 'Partner has left' : 'Connected with a stranger'}
-        </span>
-        <button
-          onClick={() => setShowReport(true)}
-          className="text-gray-500 text-xs hover:text-red-400 transition-colors"
-          style={{ minHeight: 44, paddingLeft: 8, paddingRight: 8 }}
-        >
-          Report
-        </button>
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: theme.bg }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', maxWidth: 600, width: '100%', margin: '0 auto' }}>
 
-      {partnerLeft && (
-        <div className="bg-[#1a1a1a] border-b border-[#2a2a2a] px-4 py-3 text-center">
-          <p className="text-gray-300 text-sm mb-2">Your partner has left.</p>
-          <button
-            onClick={() => router.push('/')}
-            className="bg-[#7c3aed] text-white rounded-xl px-6 py-2 text-sm font-semibold hover:bg-[#6d28d9]"
-          >
-            New Chat
-          </button>
+        {/* Header */}
+        <div style={{ background: theme.surface, borderBottom: `1px solid ${theme.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 10, height: 10, borderRadius: '50%', background: partnerLeft ? '#ef4444' : '#22c55e', flexShrink: 0 }} />
+            <span style={{ fontSize: 17, fontWeight: 600, color: theme.textPrimary }}>
+              {partnerLeft ? 'Disconnected' : 'Stranger'}
+            </span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <ThemeToggle />
+            <button
+              onClick={() => setShowReport(true)}
+              style={{ color: theme.textSecondary, fontSize: 14, padding: '7px 13px', borderRadius: 10, background: 'transparent', border: `1px solid ${theme.border}`, cursor: 'pointer' }}
+            >
+              Report
+            </button>
+            <button
+              onClick={handleStop}
+              title="Stop chatting"
+              style={{ color: '#ef4444', fontSize: 14, padding: '7px 13px', borderRadius: 10, background: 'transparent', border: '1px solid #ef444466', cursor: 'pointer', fontWeight: 600 }}
+            >
+              Stop
+            </button>
+          </div>
         </div>
-      )}
 
-      <MessageList messages={messages} myUserId={userId} />
+        {/* Partner left banner */}
+        {partnerLeft && (
+          <div style={{ background: theme.surface, borderBottom: `1px solid ${theme.border}`, padding: '20px', textAlign: 'center' }}>
+            <p style={{ color: theme.textSecondary, marginBottom: 16, fontSize: 15 }}>Your partner has left the chat.</p>
+            <button
+              onClick={handleNext}
+              style={{ background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 14, padding: '12px 32px', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}
+            >
+              New Chat →
+            </button>
+          </div>
+        )}
 
-      <div className="border-t border-[#2a2a2a]">
-        <div className="px-4 pt-2">
-          <button
-            onClick={handleNext}
-            className="w-full bg-[#2a2a2a] text-gray-300 rounded-xl py-2 text-sm font-semibold hover:bg-[#3a3a3a] transition-colors"
-            style={{ minHeight: 44 }}
-          >
-            Next →
-          </button>
+        {/* Messages */}
+        <MessageList messages={messages} myUserId={userId} />
+
+        {/* Bottom bar */}
+        <div style={{ background: theme.surface, borderTop: `1px solid ${theme.border}` }}>
+          <div style={{ padding: '12px 16px 8px' }}>
+            <button
+              onClick={handleNext}
+              style={{ width: '100%', background: theme.surface2, color: theme.textSecondary, border: `1px solid ${theme.border}`, borderRadius: 14, padding: '12px', fontSize: 14, fontWeight: 600, cursor: 'pointer', minHeight: 46 }}
+            >
+              Next stranger →
+            </button>
+          </div>
+          <MessageInput onSend={sendMessage} disabled={partnerLeft} />
         </div>
-        <MessageInput onSend={sendMessage} disabled={partnerLeft} />
+
       </div>
 
       {showReport && (

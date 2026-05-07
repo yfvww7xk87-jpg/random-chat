@@ -3,11 +3,12 @@ import { createServerClient } from '@/lib/supabase/server'
 import ChatRoom from '@/components/ChatRoom'
 
 interface Props {
-  searchParams: { session?: string }
+  searchParams: Promise<{ session?: string }>
 }
 
 export default async function ChatPage({ searchParams }: Props) {
-  const sessionId = searchParams.session
+  const params = await searchParams
+  const sessionId = params.session
   if (!sessionId) redirect('/')
 
   const supabase = createServerClient()
