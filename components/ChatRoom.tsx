@@ -33,6 +33,8 @@ export default function ChatRoom({ sessionId, userA, userB }: Props) {
   const [messages, setMessages] = useState<Message[]>([])
   const [partnerLeft, setPartnerLeft] = useState(false)
   const [showReport, setShowReport] = useState(false)
+  const [partnerTyping, setPartnerTyping] = useState(false)
+  const partnerTypingTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const channelRef = useRef<RealtimeChannel | null>(null)
 
@@ -57,6 +59,11 @@ export default function ChatRoom({ sessionId, userA, userB }: Props) {
       .on('broadcast', { event: 'partner_left' }, () => {
         setPartnerLeft(true)
       })
+      .on('broadcast', { event: 'typing' }, () => {
+        setPartnerTyping(true)
+        if (partnerTypingTimer.current) clearTimeout(partnerTypingTimer.current)
+        partnerTypingTimer.current = setTimeout(() => setPartnerTyping(false), 2000)
+      })
       .on('presence', { event: 'leave' }, ({ leftPresences }) => {
         const gone = leftPresences.some((p: any) => p.userId === partnerId)
         if (gone) setPartnerLeft(true)
@@ -72,6 +79,12 @@ export default function ChatRoom({ sessionId, userA, userB }: Props) {
       supabase.removeChannel(channel)
     }
   }, [sessionId, userId, partnerId])
+
+  function handleTyping() {
+    const channel = channelRef.current
+    if (!channel) return
+    channel.send({ type: 'broadcast', event: 'typing', payload: {} })
+  }
 
   async function sendMessage(text: string) {
     const channel = channelRef.current
@@ -199,7 +212,12 @@ export default function ChatRoom({ sessionId, userA, userB }: Props) {
               Next stranger →
             </button>
           </div>
-          <MessageInput onSend={sendMessage} disabled={partnerLeft} />
+          {partnerTyping && !partnerLeft && (
+            <div style={{ paddingLeft: 20, paddingBottom: 4, fontSize: 13, color: theme.textSecondary, fontStyle: 'italic' }}>
+              Stranger is typing...
+            </div>
+          )}
+          <MessageInput onSend={sendMessage} onTyping={handleTyping} disabled={partnerLeft} />
         </div>
 
       </div>

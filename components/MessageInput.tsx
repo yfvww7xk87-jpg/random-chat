@@ -3,10 +3,11 @@ import { useTheme } from '@/lib/theme-context'
 
 interface Props {
   onSend: (text: string) => void
+  onTyping: () => void
   disabled: boolean
 }
 
-export default function MessageInput({ onSend, disabled }: Props) {
+export default function MessageInput({ onSend, onTyping, disabled }: Props) {
   const [text, setText] = useState('')
   const { theme } = useTheme()
 
@@ -30,7 +31,7 @@ export default function MessageInput({ onSend, disabled }: Props) {
     <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', padding: '12px 16px', paddingBottom: 'max(16px, env(safe-area-inset-bottom))' }}>
       <textarea
         value={text}
-        onChange={e => setText(e.target.value)}
+        onChange={e => { setText(e.target.value); onTyping() }}
         onKeyDown={handleKeyDown}
         disabled={disabled}
         placeholder={disabled ? 'Partner has left...' : 'Type a message...'}
