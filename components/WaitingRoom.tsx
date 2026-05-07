@@ -24,6 +24,15 @@ export default function WaitingRoom() {
       })
       .subscribe()
 
+    // Poll every 3 seconds as fallback in case broadcast is missed
+    const poll = setInterval(async () => {
+      const res = await fetch(`/api/queue/status?userId=${userId}`)
+      const data = await res.json()
+      if (data.status === 'matched') {
+        router.push(`/chat?session=${data.sessionId}`)
+      }
+    }, 3000)
+
     function handleUnload() {
       fetch('/api/queue/leave', {
         method: 'DELETE',
@@ -35,6 +44,7 @@ export default function WaitingRoom() {
     window.addEventListener('beforeunload', handleUnload)
 
     return () => {
+      clearInterval(poll)
       supabase.removeChannel(channel)
       window.removeEventListener('beforeunload', handleUnload)
     }
